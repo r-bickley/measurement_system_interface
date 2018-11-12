@@ -1,5 +1,6 @@
 import math as m
 import numpy as np
+import pandas as pd
 
 #construct the plane equation
 def plane_eqn(points):
@@ -43,3 +44,32 @@ test_z_1 = local_pcb_height(testplane,testpoint_1)
 test_z_2 = local_pcb_height(testplane,testpoint_2)
 print(test_z_1)
 print(test_z_2)
+
+def move_laser(point):
+    #where point is the x, y coordinate pair for the tuner center
+    currentx = point[0]
+    currenty = point[1]
+    #translate the laser to these coordinates
+
+def measure_tuner(point):
+    #point is the x, y, coordinate pair for the tuner center
+    move_laser(point)
+    tuner_bottom = # + tuner_bottom_thickness
+    #set tuner_bottom to be the current laser reading
+    move_laser(point[0]+width, point[1])
+    tuner_top = #
+    #set tuner_top to the current laser reading
+    return(tuner_top, tuner_bottom)
+
+def measure_board(input_filename):
+    tuner_set = pd.read_csv(input_filename)
+    output = pd.data_frame()
+    for i in range(len(tuner_set)):
+        this_tuner = measure_tuner(tuner_set[i])
+        local_pcb = local_pcb_height(tuner_set[i])
+        tuner_depth = this_tuner[1] - local_pcb - pcb_thickness
+        tuner_length = this_tuner[1] - this_tuner[0]
+        output.append(tuner_set[i][0],tuner_set[i][1],tuner_depth,tuner_length)
+        #add the x, y, depth, and length values to the ourput data frame.
+    output_csv = pd.to_csv(output)
+    return(output_csv)
