@@ -5,6 +5,6 @@ to the structure of a system.
 
 # Edit
 To edit the UML diagram, use StarUML.
-Available for free at staruml.io, compatible with Mac and Windows.
+Available for free [here](staruml.io), compatible with Mac and Windows.
 It will ask you if you'd like to purchase a license, but you can use the 'evaluation' version indefinitley, similar to WinRAR.
 Not sure if this file can be edited with other UML editing tools.
