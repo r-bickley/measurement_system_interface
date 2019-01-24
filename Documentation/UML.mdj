@@ -135,7 +135,7 @@
 											"top": 302,
 											"width": 174.7509765625,
 											"height": 13,
-											"text": "+Attribute 1",
+											"text": "-_timer: javax.swing.Timer",
 											"horizontalAlignment": 0
 										}
 									],
@@ -2710,14 +2710,6 @@
 				},
 				{
 					"_type": "UMLClass",
-					"_id": "AAAAAAFoL8VKKnw39VQ=",
-					"_parent": {
-						"$ref": "AAAAAAFF+qBWK6M3Z8Y="
-					},
-					"name": "Class1"
-				},
-				{
-					"_type": "UMLClass",
 					"_id": "AAAAAAFoL8WK6nx4yrk=",
 					"_parent": {
 						"$ref": "AAAAAAFF+qBWK6M3Z8Y="
@@ -2758,8 +2750,9 @@
 							"_parent": {
 								"$ref": "AAAAAAFoL8WK6nx4yrk="
 							},
-							"name": "Attribute 1",
-							"type": ""
+							"name": "_timer",
+							"visibility": "private",
+							"type": "javax.swing.Timer"
 						}
 					],
 					"operations": [
