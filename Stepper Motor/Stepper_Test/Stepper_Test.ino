@@ -39,10 +39,10 @@ void simpleAccel(int steps) {
 
   int d = lowSpeed;
 
-  for (i = 0; i < steps; i++) {
+  for (int i = 0; i < steps; i++) {
     digitalWrite(STEP_PIN, HIGH);
     digitalWrite(STEP_PIN, LOW);
-    delayMicroseconds(d)
+    delayMicroseconds(d);
 
     if (i < rampUpStop)
       d -= change;
@@ -60,7 +60,7 @@ void linearAccel(int steps) {
   float c0 = 2000 * sqrt(2*angle/accel) * 0.67703;
   float lastDelay = 0;
   int highSpeed = 100;
-  for (int i = 0; i < STEPS; i++) {
+  for (int i = 0; i < steps; i++) {
     float d = c0;
     if (d < highSpeed)
       d = highSpeed;
@@ -69,16 +69,16 @@ void linearAccel(int steps) {
   }
 
   // ACCEL, read FORWARD through array
-  for (int i = 0; i < STEPS; i++) {
+  for (int i = 0; i < steps; i++) {
     digitalWrite(STEP_PIN, HIGH);
     delayMicroseconds(delays[i]);
     digitalWrite(STEP_PIN, LOW);
   }
 
   // DECEL, read BACKWARD through array
-  for (int i = 0; i < STEPS; i++) {
+  for (int i = 0; i < steps; i++) {
     digitalWrite(STEP_PIN, HIGH);
-    delayMicroseconds(delays[STEPS-i-1]);
+    delayMicroseconds(delays[steps-i-1]);
     digitalWrite(STEP_PIN, LOW);
   }
 }
@@ -87,21 +87,24 @@ void loop() {
 
   // Test simpleMove
   digitalWrite(DIR_PIN, LOW);
-  simpleMove(800);
+  simpleMove(200);
+  delay(100);
   digitalWrite(DIR_PIN, HIGH);
-  simpleMove(800);
+  simpleMove(200);
 
   // Test simpleAccel
-  digitalWrite(DIR_PIN, LOW);
-  simpleAccel(2400);
-  digitalWrite(DIR_PIN, HIGH);
-  simpleAccel(2400);
+//  digitalWrite(DIR_PIN, LOW);
+//  simpleAccel(2400);
+//  digitalWrite(DIR_PIN, HIGH);
+//  simpleAccel(2400);
 
   // Test linearAccel
-  digitalWrite(DIR_PIN, LOW);
-  linearAccel(800);
-  digitalWrite(DIR_PIN, HIGH);
-  linearAccel(800);
+//  digitalWrite(DIR_PIN, LOW);
+//  linearAccel(800);
+//  digitalWrite(DIR_PIN, HIGH);
+//  linearAccel(800);
 
-  while (true);
+  delay(1000);
+
+  //while (true);
 }
