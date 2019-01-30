@@ -16,11 +16,19 @@ void setup() {
 
 // Move motor 'steps' steps
 void simpleMove(int steps) {
-  int interval = 1200; // Control speed with rest interval
+  int interval = 900; // Control speed with rest interval
   for (int i = 0; i < steps; i++) {
     digitalWrite(STEP_PIN, HIGH);
     digitalWrite(STEP_PIN, LOW);
     delayMicroseconds(interval);
+  }
+}
+
+void itMove(int steps) {
+  for (int i = 0; i < steps; i++) {
+    digitalWrite(STEP_PIN, HIGH);
+    digitalWrite(STEP_PIN, LOW);
+    delay(1);
   }
 }
 
@@ -29,7 +37,7 @@ void simpleMove(int steps) {
 void simpleAccel(int steps) {
   
   int lowSpeed = 2000;
-  int highSpeed = 100;
+  int highSpeed = 1000;
   int change = 2;
 
   int rampUpStop = (lowSpeed - highSpeed) / change;
@@ -88,23 +96,32 @@ void loop() {
   // Test simpleMove
   digitalWrite(DIR_PIN, LOW);
   simpleMove(200);
-  delay(100);
+  delay(1000);
   digitalWrite(DIR_PIN, HIGH);
   simpleMove(200);
 
+  // Test itMove
+//  digitalWrite(DIR_PIN, LOW);
+//  itMove(20);
+  //delay(100);
+  //digitalWrite(DIR_PIN, HIGH);
+  //itMove(200);
+
   // Test simpleAccel
 //  digitalWrite(DIR_PIN, LOW);
-//  simpleAccel(2400);
+//  simpleAccel(4000);
+//  delay(1000);
 //  digitalWrite(DIR_PIN, HIGH);
-//  simpleAccel(2400);
+//  simpleAccel(4000);
 
   // Test linearAccel
 //  digitalWrite(DIR_PIN, LOW);
-//  linearAccel(800);
+//  linearAccel(200);
+//  delay(1000);
 //  digitalWrite(DIR_PIN, HIGH);
-//  linearAccel(800);
+//  linearAccel(200);
 
-  delay(1000);
+  delay(500);
 
   //while (true);
 }
