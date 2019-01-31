@@ -11,8 +11,10 @@
 #define TIMER1_INTERRUPTS_OFF   TIMSK1 &= ~(1 << OCIE1A);
 
 unsigned int c0;
-const int buttonPin = 8;
-int buttonState = 0;
+const int buttonPinFor = 8;
+const int buttonPinRev = 9;
+int buttonStateFor = 0;
+int buttonStateRev = 0;
 
 void setup() {
   pinMode(STEP_PIN,   OUTPUT);
@@ -20,7 +22,8 @@ void setup() {
   pinMode(ENABLE_PIN, OUTPUT);
   pinMode(SLEEP_PIN,  OUTPUT);
   pinMode(RESET_PIN,  OUTPUT);
-  pinMode(buttonPin,  INPUT);
+  pinMode(buttonPinFor,  INPUT);
+  pinMode(buttonPinRev,  INPUT);
 
   digitalWrite(SLEEP_PIN, HIGH);
   digitalWrite(RESET_PIN, HIGH);
@@ -101,11 +104,16 @@ void moveToPosition(long p, bool wait = true) {
 }
 
 void jogPosition() {
-  buttonState = digitalRead(buttonPin);
-  if (buttonState == HIGH) {
+  buttonStateFor = digitalRead(buttonPinFor);
+  buttonStateRev = digitalRead(buttonPinRev);
+  if ((buttonStateFor == HIGH) ^ (buttonStateRev == HIGH)) {
     digitalWrite(SLEEP_PIN, HIGH);
-    moveToPosition(stepPosition + 400);
-    delay(1000);
+    if (buttonStateFor == HIGH) {
+      moveToPosition(stepPosition + 200);
+    } else {
+      moveToPosition(stepPosition - 200);
+    }
+    delay(500);
     digitalWrite(SLEEP_PIN, LOW);
   }
 }
