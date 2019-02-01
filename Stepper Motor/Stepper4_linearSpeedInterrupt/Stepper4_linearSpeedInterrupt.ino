@@ -3,6 +3,9 @@
 #define ENABLE_PIN       4
 #define SLEEP_PIN        5
 #define RESET_PIN        6
+#define MS1_PIN          10
+#define MS2_PIN          11
+#define MS3_PIN          12
 
 #define STEP_HIGH        PORTD |=  0b00001000;
 #define STEP_LOW         PORTD &= ~0b00001000;
@@ -17,16 +20,24 @@ int buttonStateFor = 0;
 int buttonStateRev = 0;
 
 void setup() {
-  pinMode(STEP_PIN,   OUTPUT);
-  pinMode(DIR_PIN,    OUTPUT);
-  pinMode(ENABLE_PIN, OUTPUT);
-  pinMode(SLEEP_PIN,  OUTPUT);
-  pinMode(RESET_PIN,  OUTPUT);
-  pinMode(buttonPinFor,  INPUT);
-  pinMode(buttonPinRev,  INPUT);
+  pinMode(STEP_PIN,       OUTPUT);
+  pinMode(DIR_PIN,        OUTPUT);
+  pinMode(ENABLE_PIN,     OUTPUT);
+  pinMode(SLEEP_PIN,      OUTPUT);
+  pinMode(RESET_PIN,      OUTPUT);
+  pinMode(buttonPinFor,   INPUT);
+  pinMode(buttonPinRev,   INPUT);
+  pinMode(MS1_PIN,        OUTPUT);
+  pinMode(MS2_PIN,        OUTPUT);
+  pinMode(MS3_PIN,        OUTPUT);
 
-  digitalWrite(SLEEP_PIN, HIGH);
+  digitalWrite(SLEEP_PIN, LOW);
   digitalWrite(RESET_PIN, HIGH);
+
+  // Set Full Step Mode
+  digitalWrite(MS1_PIN,   LOW);
+  digitalWrite(MS2_PIN,   LOW);
+  digitalWrite(MS3_PIN,   LOW);
 
   noInterrupts();
   TCCR1A = 0;
@@ -83,6 +94,39 @@ ISR(TIMER1_COMPA_vect)
   OCR1A = d;
 }
 
+void sleep() {
+  digitalWrite(SLEEP_PIN, LOW);
+}
+
+void wake() {
+  digitalWrite(SLEEP_PIN, HIGH);
+  delay(10);  // Minimum 1ms delay for charge pump stabilization
+}
+
+void msSet(int ms) {
+  if (ms == 1) {
+    digitalWrite(MS1_PIN, LOW);
+    digitalWrite(MS2_PIN, LOW);
+    digitalWrite(MS3_PIN, LOW);
+  } else if (ms == 2) {
+    digitalWrite(MS1_PIN, HIGH);
+    digitalWrite(MS2_PIN, LOW);
+    digitalWrite(MS3_PIN, LOW);
+  } else if (ms == 4) {
+    digitalWrite(MS1_PIN, LOW);
+    digitalWrite(MS2_PIN, HIGH);
+    digitalWrite(MS3_PIN, LOW);
+  } else if (ms == 8) {
+    digitalWrite(MS1_PIN, HIGH);
+    digitalWrite(MS2_PIN, HIGH);
+    digitalWrite(MS3_PIN, LOW);
+  } else if (ms == 16) {
+    digitalWrite(MS1_PIN, HIGH);
+    digitalWrite(MS2_PIN, HIGH);
+    digitalWrite(MS3_PIN, HIGH);
+  }
+}
+
 void moveNSteps(long steps) {
 
   digitalWrite(DIR_PIN, steps < 0 ? HIGH : LOW);
@@ -103,27 +147,30 @@ void moveToPosition(long p, bool wait = true) {
   while ( wait && ! movementDone );
 }
 
-void jogPosition() {
+void jogPosition(int jogSpeed, int jogSteps) {  
+  int oldSpeed = maxSpeed;
+  maxSpeed = jogSpeed;
   buttonStateFor = digitalRead(buttonPinFor);
   buttonStateRev = digitalRead(buttonPinRev);
+  
   if ((buttonStateFor == HIGH) ^ (buttonStateRev == HIGH)) {
-    digitalWrite(SLEEP_PIN, HIGH);
+    wake();
     if (buttonStateFor == HIGH) {
-      moveToPosition(stepPosition + 200);
+      moveToPosition(stepPosition + jogSteps);
     } else {
-      moveToPosition(stepPosition - 200);
+      moveToPosition(stepPosition - jogSteps);
     }
     delay(500);
-    digitalWrite(SLEEP_PIN, LOW);
+    sleep();
   }
+  
+  maxSpeed = oldSpeed;
 }
 
-void loop() {
-
-  //moveToPosition(  1600 );
-  //moveToPosition( -1600 );
+void moveTest() {
+  wake();
+  
   moveToPosition( 0 );
-
   delay(1000);
 
   moveToPosition( 200 );
@@ -163,11 +210,83 @@ void loop() {
   maxSpeed = 100;
   moveToPosition( 0 );
 
-  digitalWrite(SLEEP_PIN, LOW);
+  sleep();
+}
 
-  maxSpeed = 200;
+void microstepTest(int msSpeed) {
+  wake();
+  
+  // Full Step
+  msSet(1);
+
+  moveToPosition(0);
+  moveToPosition(200);
+  moveToPosition(400);
+  moveToPosition(200);
+  moveToPosition(0);
+  
+  delay(1000);
+
+  // Half Step
+  msSet(2);
+
+  moveToPosition(0);
+  moveToPosition(400);
+  moveToPosition(800);
+  moveToPosition(400);
+  moveToPosition(0);
+  
+  delay(1000);
+
+  // Quarter Step
+  msSet(4);
+
+  moveToPosition(0);
+  moveToPosition(800);
+  moveToPosition(1600);
+  moveToPosition(800);
+  moveToPosition(0);
+  
+  delay(1000);
+
+  // Eighth Step
+  msSet(8);
+
+  moveToPosition(0);
+  moveToPosition(1600);
+  moveToPosition(3200);
+  moveToPosition(1600);
+  moveToPosition(0);
+  
+  delay(1000);
+
+  // Sixteenth Step
+  msSet(16);
+
+  moveToPosition(0);
+  moveToPosition(3200);
+  moveToPosition(6400);
+  moveToPosition(3200);
+  moveToPosition(0);
+  
+  delay(1000);
+
+  // Return to Full Step
+  msSet(1);
+
+  sleep();
+}
+
+void loop() {
+
+  //moveTest();
+
+  //microstepTest(400);
+
+  //msSet(16);
+
   while (true) {
-    jogPosition();
+    jogPosition(200, 1000);
   }
 
 }
