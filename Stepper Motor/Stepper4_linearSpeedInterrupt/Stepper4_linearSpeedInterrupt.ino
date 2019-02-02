@@ -283,7 +283,7 @@ void loop() {
 
   //microstepTest(400);
 
-  //msSet(16);
+  msSet(1);
 
   while (true) {
     jogPosition(200, 1000);

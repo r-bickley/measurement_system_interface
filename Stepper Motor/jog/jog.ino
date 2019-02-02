@@ -1,42 +1,30 @@
 // Function for manually jogging a stepper motor
-// NEMA 17 stepper motor
 // A4988 driver
 // Author: Matthew Kramer, Team ME46
 
-#define DIR_PIN     2
-#define STEP_PIN    3
-#define ENABLE_PIN  4
-#include Keyboard.h
+//#include Stepper4_linearSpeedInterrupt
+//#include sleep
 
-void setup() {
-  pinMode(STEP_PIN,   OUTPUT);
-  pinMode(DIR_PIN,    OUTPUT);
-  pinMode(ENABLE_PIN, OUTPUT);
-  Serial.begin(9600);
-  Keyboard.begin();
-}
+void jogPosition(int jogSpeed, int jogSteps) {
+  int oldSpeed = maxSpeed;
+  maxSpeed = jogSpeed;
+  buttonStateFor = digitalRead(BUTTON_FOR);
+  buttonStateRev = digitalRead(BUTTON_REV);
 
-void jog(int steps) {
-  int interval = 2000;
-  for (int i = 0; i < steps; i++) {
-    digitalWrite(STEP_PIN, HIGH);
-    digitalWrite(STEP_PIN, LOW);
-    delayMicroseconds(interval)
-  }
-}
-
-void loop() {
-  // Listen for button inputs
-  // If input given, jog
-  if (Serial.available() > 0) {
-    char inChar = Serial.read();
-    if (inChar == 'a') {
-      digitalWrite(DIR_PIN, HIGH);
-      jog(20);
+  if ((buttonStateFor == HIGH) ^ (buttonStateRev == HIGH)) {
+    wake();
+    if (buttonStateFor == HIGH) {
+      moveToPosition(stepPosition + jogSteps);
+    } else {
+      moveToPosition(stepPosition - jogSteps);
     }
-    else if (inChar = 'd') {
-      digitalWrite(DIR_PIN, LOW);
-      jog(20);
-    }
+    delay(500);
+    sleep();
   }
+
+  maxSpeed = oldSpeed;
 }
+
+void setup() {}
+
+void loop() {}
