@@ -34,11 +34,6 @@ void setup() {
   digitalWrite(SLEEP_PIN, LOW);
   digitalWrite(RESET_PIN, HIGH);
 
-  // Set Full Step Mode
-  digitalWrite(MS1_PIN,   LOW);
-  digitalWrite(MS2_PIN,   LOW);
-  digitalWrite(MS3_PIN,   LOW);
-
   noInterrupts();
   TCCR1A = 0;
   TCCR1B = 0;
@@ -283,10 +278,10 @@ void loop() {
 
   //microstepTest(400);
 
-  msSet(1);
+  msSet(16);
 
   while (true) {
-    jogPosition(200, 1000);
+    jogPosition(200, 3000);
   }
 
 }
