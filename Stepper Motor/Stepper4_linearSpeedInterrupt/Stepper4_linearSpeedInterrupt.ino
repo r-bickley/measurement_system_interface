@@ -6,6 +6,7 @@
 #define MS1_PIN          10
 #define MS2_PIN          11
 #define MS3_PIN          12
+#define LED_PIN          13
 
 #define STEP_HIGH        PORTD |=  0b00001000;
 #define STEP_LOW         PORTD &= ~0b00001000;
@@ -18,6 +19,7 @@ const int buttonPinFor = 8;
 const int buttonPinRev = 9;
 int buttonStateFor = 0;
 int buttonStateRev = 0;
+int ledState = LOW;
 
 void setup() {
   pinMode(STEP_PIN,       OUTPUT);
@@ -30,6 +32,7 @@ void setup() {
   pinMode(MS1_PIN,        OUTPUT);
   pinMode(MS2_PIN,        OUTPUT);
   pinMode(MS3_PIN,        OUTPUT);
+  pinMode(LED_PIN,        OUTPUT);
 
   digitalWrite(SLEEP_PIN, LOW);
   digitalWrite(RESET_PIN, HIGH);
@@ -44,6 +47,8 @@ void setup() {
   interrupts();
 
   c0 = 1600; // was 2000 * sqrt( 2 * angle / accel )
+
+  Serial.begin(9600);
 }
 
 volatile int dir = 0;
@@ -142,7 +147,7 @@ void moveToPosition(long p, bool wait = true) {
   while ( wait && ! movementDone );
 }
 
-void jogPosition(int jogSpeed, int jogSteps) {  
+void buttonJog(int jogSpeed, int jogSteps) {  
   int oldSpeed = maxSpeed;
   maxSpeed = jogSpeed;
   buttonStateFor = digitalRead(buttonPinFor);
@@ -159,6 +164,20 @@ void jogPosition(int jogSpeed, int jogSteps) {
     sleep();
   }
   
+  maxSpeed = oldSpeed;
+}
+
+void serialJog(int jogSpeed, int jogSteps, int dir) {
+  int oldSpeed = maxSpeed;
+  maxSpeed = jogSpeed;
+  wake();
+  if (dir == HIGH) {
+    moveToPosition(stepPosition + jogSteps);
+  } else {
+    moveToPosition(stepPosition - jogSteps);
+  }
+  delay(500);
+  sleep();
   maxSpeed = oldSpeed;
 }
 
@@ -281,7 +300,20 @@ void loop() {
   msSet(16);
 
   while (true) {
-    jogPosition(200, 3000);
+    if (Serial.available() > 0) {
+      int inByte = Serial.read();
+      Serial.print("Received: ");
+      Serial.println(inByte);
+      switch (inByte) {
+        case 48:
+          serialJog(200, 3000, LOW);
+          break;
+        case 49:
+          serialJog(200, 3000, HIGH);
+          break;
+      }
+    }
+    //buttonJog(200, 3000);
   }
 
 }
