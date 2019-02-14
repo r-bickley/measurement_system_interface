@@ -297,7 +297,7 @@ void loop() {
 
   //microstepTest(400);
 
-  msSet(16);
+  msSet(1);
 
   while (true) {
     if (Serial.available() > 0) {
@@ -306,14 +306,14 @@ void loop() {
       Serial.println(inByte);
       switch (inByte) {
         case 48:
-          serialJog(200, 3000, LOW);
+          serialJog(200, 800, LOW);
           break;
         case 49:
-          serialJog(200, 3000, HIGH);
+          serialJog(200, 800, HIGH);
           break;
       }
     }
-    //buttonJog(200, 3000);
+    //buttonJog(200, 800);
   }
 
 }

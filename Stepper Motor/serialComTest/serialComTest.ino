@@ -19,7 +19,7 @@ void loop() {
         break;
       case 49:
         digitalWrite(LED_PIN, HIGH);
-        Serial.println("Blink");
+        Serial.println("Turn on");
         break;
     }
   }
