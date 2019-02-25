@@ -7,24 +7,24 @@
 // Output: Movement done OR error
 
 // Axis Types:
-// X - X-axis
-// Y - Y-axis
+// 0 - X-axis
+// 1 - Y-axis
 
 // Target Positions:
 // [int] - target coordinate in global(?) coords
 
 // Movement Types
-// T - Transition: fast, full step
-// M - Measuring: slow, 1/16th step
-// C - Calibration: medium(?), full step
+// 0 - Transition: fast, full step
+// 1 - Measuring: slow, 1/16th step
+// 2 - Calibration: medium(?), full step
 
 // Example Serial Input
-// X 4000 T
+// <0,4000,1>
 
-#define XDIR_PIN          0
-#define XSTEP_PIN         1
-#define YDIR_PIN          2
-#define YSTEP_PIN         3
+#define XDIR_PIN          2
+#define XSTEP_PIN         3
+#define YDIR_PIN          0 // CHANGE
+#define YSTEP_PIN         1 // CHANGE
 #define ENABLE_PIN        4
 #define SLEEP_PIN         5
 #define RESET_PIN         6
@@ -39,6 +39,12 @@
 #define TIMER1_INTERRUPTS_OFF   TIMSK1 &= ~(1 << OCIE1A);
 
 unsigned int c0;
+const byte numChars = 32;
+char receivedChars[numChars];
+bool newData = false;
+int axis = 0;
+int targetPos = 0;
+int mType = 0;
 
 void setup() {
   pinMode(XDIR_PIN,       OUTPUT);
@@ -67,6 +73,8 @@ void setup() {
   c0 = 1600; // was 2000 * sqrt( 2 * angle / accel )
 
   Serial.begin(9600);
+  delay(10);
+  Serial.println("<Arduino is ready>");
 }
 
 volatile int dir = 0;
@@ -117,7 +125,7 @@ void sleep() {
 
 void wake() {
   digitalWrite(SLEEP_PIN, HIGH);
-  delay(10); // Minimum 1ms delay for charge pump stabilization
+  delay(1); // Minimum 1ms delay for charge pump stabilization
 }
 
 void msSet(int ms) {
@@ -151,7 +159,11 @@ void msSet(int ms) {
 }
 
 void moveNSteps(long steps) {
-  digitalWrite(DIR_PIN, steps < 0 ? HIGH : LOW);
+  if (axis == 0) {
+    digitalWrite(XDIR_PIN, steps < 0 ? HIGH : LOW);
+  } else if (axis == 1) {
+    digitalWrite(YDIR_PIN, steps < 0 ? HIGH : LOW);
+  }
   dir = steps > 0 ? 1 : -1;
   totalSteps = abs(steps);
   d = c0;
@@ -173,52 +185,124 @@ void serialJog(int jogSpeed, int jogSteps, int dir) {
   int oldSpeed = maxSpeed;
   maxSpeed = jogSpeed;
   wake();
-  moveToPosition(
   if (dir == HIGH) {
-    moveToPosition(stepPosition + jogSteps);
+    moveToPosition(stepPosition + jogSteps, axis);
   } else {
-    moveToPosition(stepPosition - jogSteps);
+    moveToPosition(stepPosition - jogSteps, axis);
   }
   delay(500);
   sleep();
   maxSpeed = oldSpeed;
 }
 
-void serialMove(char axis, int targetPos, char mType) {
+void moveMotors() {
   // Set speed and microstepping
   switch (mType) {
-    case 'T':
+    case 0:
       msSet(1);
       maxSpeed = 200;
-    case 'M':
+      break;
+    case 1:
       msSet(16);
       maxSpeed = 400;
-    case 'C':
+      break;
+    case 2:
       msSet(1);
       maxSpeed = 400;
+      break;
   }
   
   // Move desired axis
-  if (axis == 'X') {
-    moveToPosition(targetPos) // and X axis
-  } else {
-    moveToPosition(targetPos) // and Y axis
+  wake();
+  if (axis == 0) {
+    moveToPosition(targetPos);
+  } else if (axis == 1) {
+    moveToPosition(targetPos);
+  }
+  sleep();
+}
+
+void recv() {
+  static bool recvInProgress = false;
+  static byte ndx = 0;
+  char startMarker = '<';
+  char endMarker = '>';
+  char rc;
+
+  while (Serial.available() > 0 && newData == false) {
+    rc = Serial.read();
+
+    if (recvInProgress == true) {
+      if (rc != endMarker) {
+        receivedChars[ndx] = rc;
+        ndx++;
+        if (ndx >= numChars) {
+          ndx = numChars - 1;
+        }
+      }
+      else {
+        receivedChars[ndx] = '\0'; // terminate string
+        recvInProgress = false;
+        ndx = 0;
+        newData = true;
+      }
+    }
+    else if (rc == startMarker) {
+      recvInProgress = true;
+    }
+  }
+}
+
+void showNewData() {
+  Serial.print("This just in ... ");
+  Serial.println(receivedChars);
+}
+
+void parseData() {
+  char * strtokIndx;
+  
+  strtokIndx = strtok(receivedChars, ",");
+  axis = atoi(strtokIndx);
+
+  strtokIndx = strtok(NULL, ",");
+  targetPos = atoi(strtokIndx);
+
+  strtokIndx = strtok(NULL, ",");
+  mType = atoi(strtokIndx);
+}
+
+void showParsedData() {
+  Serial.print("Moving Axis: ");
+  Serial.println(axis);
+  Serial.print("Target Position: ");
+  Serial.println(targetPos);
+  Serial.print("Movement Type: ");
+  Serial.println(mType);
+  Serial.println("\n");
+  newData = false;
+}
+
+void serialInput() {
+  recv();
+  if (newData == true) {
+    showNewData();
+    parseData();
+    showParsedData();
+    moveMotors();
   }
 }
 
 void loop() {
-  while (true) {
-    if (Serial.available() > 0) {
-      int inByte = Serial.read();
-      // Change inByte to text, not unicode/ascii or whatever
-      Serial.print("Received: ");
-      Serial.println(inByte);
-      char axis = 'X'// [First char in inByte]
-      int targetPos = 1000 // [Number in inByte]
-      char mType = 'T' // [Last char in inByte]
-      serialMove(axis, targetPos, mType)
-      // Serial.write("Movement Complete" or "Error")
-      }
-    }
-  }
+  serialInput();
+  delay(2000);
+  // Serial.write("Movement Complete" or "Error")
+  /*
+  mType = 1;
+  targetPos = 1000;
+  moveMotors();
+  mType = 0;
+  targetPos = 2000;
+  moveMotors();
+  delay(2000);
+  */
 }

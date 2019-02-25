@@ -1,11 +1,11 @@
-#define DIR_PIN          0
-#define STEP_PIN         1
+#define DIR_PIN          2
+#define STEP_PIN         3
 #define ENABLE_PIN       4
 #define SLEEP_PIN        5
 #define RESET_PIN        6
-#define MS1_PIN          10
-#define MS2_PIN          11
-#define MS3_PIN          12
+#define MS1_PIN          8
+#define MS2_PIN          9
+#define MS3_PIN          10
 #define LED_PIN          13
 
 #define STEP_HIGH        PORTD |=  0b00001000;
@@ -295,13 +295,13 @@ void microstepTest(int msSpeed) {
 
 void loop() {
 
-  //moveTest();
+  moveTest();
 
   //microstepTest(400);
 
   msSet(1);
 
-  while (true) {
+  /*while (true) {
     if (Serial.available() > 0) {
       int inByte = Serial.read();
       Serial.print("Received: ");
@@ -316,6 +316,6 @@ void loop() {
       }
     }
     //buttonJog(200, 800);
-  }
-
+  }*/
+  while (true);
 }
