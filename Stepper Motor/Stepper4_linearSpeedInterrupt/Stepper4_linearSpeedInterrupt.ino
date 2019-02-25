@@ -1,5 +1,5 @@
-#define DIR_PIN          2
-#define STEP_PIN         3
+#define DIR_PIN          0
+#define STEP_PIN         1
 #define ENABLE_PIN       4
 #define SLEEP_PIN        5
 #define RESET_PIN        6
@@ -15,10 +15,10 @@
 #define TIMER1_INTERRUPTS_OFF   TIMSK1 &= ~(1 << OCIE1A);
 
 unsigned int c0;
-const int buttonPinFor = 8;
-const int buttonPinRev = 9;
-int buttonStateFor = 0;
-int buttonStateRev = 0;
+//const int buttonPinFor = 8;
+//const int buttonPinRev = 9;
+//int buttonStateFor = 0;
+//int buttonStateRev = 0;
 int ledState = LOW;
 
 void setup() {
@@ -27,8 +27,8 @@ void setup() {
   pinMode(ENABLE_PIN,     OUTPUT);
   pinMode(SLEEP_PIN,      OUTPUT);
   pinMode(RESET_PIN,      OUTPUT);
-  pinMode(buttonPinFor,   INPUT);
-  pinMode(buttonPinRev,   INPUT);
+  //pinMode(buttonPinFor,   INPUT);
+  //pinMode(buttonPinRev,   INPUT);
   pinMode(MS1_PIN,        OUTPUT);
   pinMode(MS2_PIN,        OUTPUT);
   pinMode(MS3_PIN,        OUTPUT);
@@ -147,6 +147,7 @@ void moveToPosition(long p, bool wait = true) {
   while ( wait && ! movementDone );
 }
 
+/*
 void buttonJog(int jogSpeed, int jogSteps) {  
   int oldSpeed = maxSpeed;
   maxSpeed = jogSpeed;
@@ -166,6 +167,7 @@ void buttonJog(int jogSpeed, int jogSteps) {
   
   maxSpeed = oldSpeed;
 }
+*/
 
 void serialJog(int jogSpeed, int jogSteps, int dir) {
   int oldSpeed = maxSpeed;
