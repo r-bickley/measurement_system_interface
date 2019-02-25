@@ -184,19 +184,40 @@ void serialJog(int jogSpeed, int jogSteps, int dir) {
   maxSpeed = oldSpeed;
 }
 
+void serialMove(char axis, int targetPos, char mType) {
+  // Set speed and microstepping
+  switch (mType) {
+    case 'T':
+      msSet(1);
+      maxSpeed = 200;
+    case 'M':
+      msSet(16);
+      maxSpeed = 400;
+    case 'C':
+      msSet(1);
+      maxSpeed = 400;
+  }
+  
+  // Move desired axis
+  if (axis == 'X') {
+    moveToPosition(targetPos) // and X axis
+  } else {
+    moveToPosition(targetPos) // and Y axis
+  }
+}
+
 void loop() {
   while (true) {
     if (Serial.available() > 0) {
       int inByte = Serial.read();
+      // Change inByte to text, not unicode/ascii or whatever
       Serial.print("Received: ");
       Serial.println(inByte);
-      switch (inByte) {
-        case 48:
-          serialJog(200, 800, LOW);
-          break;
-        case 49:
-          serialJog(200, 800, HIGH);
-          break;
+      char axis = 'X'// [First char in inByte]
+      int targetPos = 1000 // [Number in inByte]
+      char mType = 'T' // [Last char in inByte]
+      serialMove(axis, targetPos, mType)
+      // Serial.write("Movement Complete" or "Error")
       }
     }
   }
