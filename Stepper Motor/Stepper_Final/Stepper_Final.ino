@@ -31,6 +31,11 @@
 #define MS1_PIN           8
 #define MS2_PIN           9
 #define MS3_PIN           10
+#define XLIM1_PIN         11
+#define XLIM2_PIN         12
+#define YLIM1_PIN         13
+#define YLIM2_PIN         14
+#define ESTOP_PIN         15
 
 #define STEP_HIGH        PORTD |=  0b00001000;
 #define STEP_LOW         PORTD &= ~0b00001000;
@@ -57,6 +62,11 @@ void setup() {
   pinMode(MS1_PIN,        OUTPUT);
   pinMode(MS2_PIN,        OUTPUT);
   pinMode(MS3_PIN,        OUTPUT);
+  pinMode(XLIM1_PIN,      INPUT);
+  pinMode(XLIM2_PIN,      INPUT);
+  pinMode(YLIM1_PIN,      INPUT);
+  pinMode(YLIM2_PIN,      INPUT);
+  pinMode(ESTOP_PIN,      INPUT);
   
   digitalWrite(SLEEP_PIN, LOW);
   digitalWrite(RESET_PIN, HIGH);
