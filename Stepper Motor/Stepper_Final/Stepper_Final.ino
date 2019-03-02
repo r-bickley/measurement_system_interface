@@ -23,19 +23,22 @@
 
 #define XDIR_PIN          2
 #define XSTEP_PIN         3
-#define YDIR_PIN          0 // CHANGE
-#define YSTEP_PIN         1 // CHANGE
-#define ENABLE_PIN        4
-#define SLEEP_PIN         5
-#define RESET_PIN         6
+#define YDIR_PIN          1 // CHANGE
+#define YSTEP_PIN         7 // CHANGE
+#define XENABLE_PIN       4
+#define YENABLE_PIN       13
+#define XSLEEP_PIN        5
+#define YSLEEP_PIN        11
+#define XRESET_PIN        6
+#define YRESET_PIN        12
 #define MS1_PIN           8
 #define MS2_PIN           9
 #define MS3_PIN           10
-#define XLIM1_PIN         11
-#define XLIM2_PIN         12
-#define YLIM1_PIN         13
-#define YLIM2_PIN         14
-#define ESTOP_PIN         15
+//#define XLIM1_PIN         11
+//#define XLIM2_PIN         12
+//#define YLIM1_PIN         13
+//#define YLIM2_PIN         14
+//#define ESTOP_PIN         15
 
 #define STEP_HIGH        PORTD |=  0b00001000;
 #define STEP_LOW         PORTD &= ~0b00001000;
@@ -56,20 +59,25 @@ void setup() {
   pinMode(XSTEP_PIN,      OUTPUT);
   pinMode(YDIR_PIN,       OUTPUT);
   pinMode(YSTEP_PIN,      OUTPUT);
-  pinMode(ENABLE_PIN,     OUTPUT);
-  pinMode(SLEEP_PIN,      OUTPUT);
-  pinMode(RESET_PIN,      OUTPUT);
+  pinMode(XENABLE_PIN,    OUTPUT);
+  pinMode(YENABLE_PIN,    OUTPUT);
+  pinMode(XSLEEP_PIN,     OUTPUT);
+  pinMode(YSLEEP_PIN,     OUTPUT);
+  pinMode(XRESET_PIN,     OUTPUT);
+  pinMode(YRESET_PIN,     OUTPUT);
   pinMode(MS1_PIN,        OUTPUT);
   pinMode(MS2_PIN,        OUTPUT);
   pinMode(MS3_PIN,        OUTPUT);
-  pinMode(XLIM1_PIN,      INPUT);
-  pinMode(XLIM2_PIN,      INPUT);
-  pinMode(YLIM1_PIN,      INPUT);
-  pinMode(YLIM2_PIN,      INPUT);
-  pinMode(ESTOP_PIN,      INPUT);
+//  pinMode(XLIM1_PIN,      INPUT);
+//  pinMode(XLIM2_PIN,      INPUT);
+//  pinMode(YLIM1_PIN,      INPUT);
+//  pinMode(YLIM2_PIN,      INPUT);
+//  pinMode(ESTOP_PIN,      INPUT);
   
-  digitalWrite(SLEEP_PIN, LOW);
-  digitalWrite(RESET_PIN, HIGH);
+  digitalWrite(XSLEEP_PIN, LOW);
+  digitalWrite(YSLEEP_PIN, LOW);
+  digitalWrite(XRESET_PIN, HIGH);
+  digitalWrite(YRESET_PIN, HIGH);
 
   noInterrupts();
   TCCR1A = 0;
@@ -129,12 +137,20 @@ ISR(TIMER1_COMPA_vect)
   OCR1A = d;
 }
 
-void sleep() {
-  digitalWrite(SLEEP_PIN, LOW);
+void sleep(int axis) {
+  if (axis == 0) {
+    digitalWrite(XSLEEP_PIN, LOW);
+  } else if (axis == 1) {
+    digitalWrite(YSLEEP_PIN, LOW);
+  }
 }
 
-void wake() {
-  digitalWrite(SLEEP_PIN, HIGH);
+void wake(int axis) {
+  if (axis == 0) {
+    digitalWrite(XSLEEP_PIN, HIGH);
+  } else if (axis == 1) {
+    digitalWrite(YSLEEP_PIN, HIGH);
+  }
   delay(1); // Minimum 1ms delay for charge pump stabilization
 }
 
@@ -191,19 +207,21 @@ void moveToPosition(long p, bool wait = true) {
   while ( wait && ! movementDone );
 }
 
+/*
 void serialJog(int jogSpeed, int jogSteps, int dir) {
   int oldSpeed = maxSpeed;
   maxSpeed = jogSpeed;
-  wake();
+  wake(axis);
   if (dir == HIGH) {
     moveToPosition(stepPosition + jogSteps, axis);
   } else {
     moveToPosition(stepPosition - jogSteps, axis);
   }
   delay(500);
-  sleep();
+  sleep(axis);
   maxSpeed = oldSpeed;
 }
+*/
 
 void moveMotors() {
   // Set speed and microstepping
@@ -223,13 +241,13 @@ void moveMotors() {
   }
   
   // Move desired axis
-  wake();
+  wake(axis);
   if (axis == 0) {
     moveToPosition(targetPos);
   } else if (axis == 1) {
     moveToPosition(targetPos);
   }
-  sleep();
+  sleep(axis);
 }
 
 void recv() {
