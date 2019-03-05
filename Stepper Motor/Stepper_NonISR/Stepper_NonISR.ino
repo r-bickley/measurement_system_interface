@@ -8,17 +8,10 @@
 #define MS3_PIN          10
 #define LED_PIN          13
 
-#define STEP_HIGH        PORTE |=  0b00100000;
-#define STEP_LOW         PORTE &= ~0b00100000;
-
-#define TIMER1_INTERRUPTS_ON    TIMSK1 |=  (1 << OCIE1A);
-#define TIMER1_INTERRUPTS_OFF   TIMSK1 &= ~(1 << OCIE1A);
+#define STEP_HIGH        digitalWrite(STEP_PIN, HIGH);
+#define STEP_LOW         digitalWrite(STEP_PIN, LOW);
 
 unsigned int c0;
-//const int buttonPinFor = 8;
-//const int buttonPinRev = 9;
-//int buttonStateFor = 0;
-//int buttonStateRev = 0;
 int ledState = LOW;
 
 void setup() {
@@ -27,8 +20,6 @@ void setup() {
   pinMode(ENABLE_PIN,     OUTPUT);
   pinMode(SLEEP_PIN,      OUTPUT);
   pinMode(RESET_PIN,      OUTPUT);
-  //pinMode(buttonPinFor,   INPUT);
-  //pinMode(buttonPinRev,   INPUT);
   pinMode(MS1_PIN,        OUTPUT);
   pinMode(MS2_PIN,        OUTPUT);
   pinMode(MS3_PIN,        OUTPUT);
@@ -36,15 +27,6 @@ void setup() {
 
   digitalWrite(SLEEP_PIN, LOW);
   digitalWrite(RESET_PIN, HIGH);
-
-  noInterrupts();
-  TCCR1A = 0;
-  TCCR1B = 0;
-  TCNT1  = 0;
-  OCR1A = 1000;
-  TCCR1B |= (1 << WGM12);
-  TCCR1B |= ((1 << CS11) | (1 << CS10));
-  interrupts();
 
   c0 = 1600; // was 2000 * sqrt( 2 * angle / accel )
 
@@ -62,36 +44,35 @@ volatile int stepPosition = 0;
 
 volatile bool movementDone = false;
 
-ISR(TIMER1_COMPA_vect)
+void movement()
 {
-  if ( stepCount < totalSteps ) {
-    STEP_HIGH
-    STEP_LOW
-    stepCount++;
-    stepPosition += dir;
-  }
-  else {
-    movementDone = true;
-    TIMER1_INTERRUPTS_OFF
-  }
-
-  if ( rampUpStepCount == 0 ) { // ramp up phase
-    n++;
-    d = d - (2 * d) / (4 * n + 1);
-    if ( d <= maxSpeed ) { // reached max speed
-      d = maxSpeed;
-      rampUpStepCount = stepCount;
+  while (!movementDone) {
+    if ( stepCount < totalSteps ) {
+      STEP_HIGH
+      STEP_LOW
+      stepCount++;
+      stepPosition += dir;
     }
-    if ( stepCount >= totalSteps / 2 ) { // reached halfway point
-      rampUpStepCount = stepCount;
+    else {
+      movementDone = true;
+    }
+
+    if ( rampUpStepCount == 0 ) { // ramp up phase
+      n++;
+      d = d - (2 * d) / (4 * n + 1);
+      if ( d <= maxSpeed ) { // reached max speed
+        d = maxSpeed;
+        rampUpStepCount = stepCount;
+      }
+      if ( stepCount >= totalSteps / 2 ) { // reached halfway point
+        rampUpStepCount = stepCount;
+      }
+    }
+    else if ( stepCount >= totalSteps - rampUpStepCount ) { // ramp down phase
+      n--;
+      d = (d * (4 * n + 1)) / (4 * n + 1 - 2);
     }
   }
-  else if ( stepCount >= totalSteps - rampUpStepCount ) { // ramp down phase
-    n--;
-    d = (d * (4 * n + 1)) / (4 * n + 1 - 2);
-  }
-
-  OCR1A = d;
 }
 
 void sleep() {
@@ -133,41 +114,18 @@ void moveNSteps(long steps) {
   dir = steps > 0 ? 1 : -1;
   totalSteps = abs(steps);
   d = c0;
-  OCR1A = d;
   stepCount = 0;
   n = 0;
   rampUpStepCount = 0;
   movementDone = false;
 
-  TIMER1_INTERRUPTS_ON
+  movement();
 }
 
 void moveToPosition(long p, bool wait = true) {
   moveNSteps(p - stepPosition);
   while ( wait && ! movementDone );
 }
-
-/*
-  void buttonJog(int jogSpeed, int jogSteps) {
-  int oldSpeed = maxSpeed;
-  maxSpeed = jogSpeed;
-  buttonStateFor = digitalRead(buttonPinFor);
-  buttonStateRev = digitalRead(buttonPinRev);
-
-  if ((buttonStateFor == HIGH) ^ (buttonStateRev == HIGH)) {
-    wake();
-    if (buttonStateFor == HIGH) {
-      moveToPosition(stepPosition + jogSteps);
-    } else {
-      moveToPosition(stepPosition - jogSteps);
-    }
-    delay(500);
-    sleep();
-  }
-
-  maxSpeed = oldSpeed;
-  }
-*/
 
 void serialJog(int jogSpeed, int jogSteps, int dir) {
   int oldSpeed = maxSpeed;

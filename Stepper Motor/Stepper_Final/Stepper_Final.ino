@@ -25,11 +25,11 @@
 #define XSTEP_PIN         3
 #define YDIR_PIN          1 // CHANGE
 #define YSTEP_PIN         7 // CHANGE
-#define XENABLE_PIN       4
+#define XENABLE_PIN       11
 #define YENABLE_PIN       13
-#define XSLEEP_PIN        5
+#define XSLEEP_PIN        4
 #define YSLEEP_PIN        11
-#define XRESET_PIN        6
+#define XRESET_PIN        5
 #define YRESET_PIN        12
 #define MS1_PIN           8
 #define MS2_PIN           9
@@ -40,8 +40,8 @@
 //#define YLIM2_PIN         14
 //#define ESTOP_PIN         15
 
-#define STEP_HIGH        PORTD |=  0b00001000;
-#define STEP_LOW         PORTD &= ~0b00001000;
+#define STEP_HIGH        PORTE |=  0b00100000;
+#define STEP_LOW         PORTE &= ~0b00100000;
 
 #define TIMER1_INTERRUPTS_ON    TIMSK1 |=  (1 << OCIE1A);
 #define TIMER1_INTERRUPTS_OFF   TIMSK1 &= ~(1 << OCIE1A);
