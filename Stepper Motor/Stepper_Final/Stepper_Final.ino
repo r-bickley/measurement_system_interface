@@ -21,27 +21,33 @@
 // Example Serial Input
 // <0,4000,1>
 
-#define XDIR_PIN          2
+#define XDIR_PIN          23
 #define XSTEP_PIN         3
-#define YDIR_PIN          1 // CHANGE
-#define YSTEP_PIN         7 // CHANGE
-#define XENABLE_PIN       11
-#define YENABLE_PIN       13
-#define XSLEEP_PIN        4
-#define YSLEEP_PIN        11
-#define XRESET_PIN        5
-#define YRESET_PIN        12
-#define MS1_PIN           8
-#define MS2_PIN           9
-#define MS3_PIN           10
+#define YDIR_PIN          39
+#define YSTEP_PIN         2
+#define XENABLE_PIN       35
+#define YENABLE_PIN       51
+#define XSLEEP_PIN        25
+#define YSLEEP_PIN        41
+#define XRESET_PIN        27
+#define YRESET_PIN        43
+#define XMS1_PIN          33
+#define XMS2_PIN          31
+#define XMS3_PIN          29
+#define YMS1_PIN          49
+#define YMS2_PIN          47
+#define YMS3_PIN          45
 //#define XLIM1_PIN         11
 //#define XLIM2_PIN         12
 //#define YLIM1_PIN         13
 //#define YLIM2_PIN         14
 //#define ESTOP_PIN         15
 
-#define STEP_HIGH        PORTE |=  0b00100000;
-#define STEP_LOW         PORTE &= ~0b00100000;
+#define XSTEP_HIGH        PORTE |=  0b00100000;
+#define XSTEP_LOW         PORTE &= ~0b00100000;
+
+#define YSTEP_HIGH        PORTE |=  0b00010000;
+#define YSTEP_LOW         PORTE &= ~0b00010000;
 
 #define TIMER1_INTERRUPTS_ON    TIMSK1 |=  (1 << OCIE1A);
 #define TIMER1_INTERRUPTS_OFF   TIMSK1 &= ~(1 << OCIE1A);
@@ -65,9 +71,12 @@ void setup() {
   pinMode(YSLEEP_PIN,     OUTPUT);
   pinMode(XRESET_PIN,     OUTPUT);
   pinMode(YRESET_PIN,     OUTPUT);
-  pinMode(MS1_PIN,        OUTPUT);
-  pinMode(MS2_PIN,        OUTPUT);
-  pinMode(MS3_PIN,        OUTPUT);
+  pinMode(XMS1_PIN,       OUTPUT);
+  pinMode(XMS2_PIN,       OUTPUT);
+  pinMode(XMS3_PIN,       OUTPUT);
+  pinMode(YMS1_PIN,       OUTPUT);
+  pinMode(YMS2_PIN,       OUTPUT);
+  pinMode(YMS3_PIN,       OUTPUT);
 //  pinMode(XLIM1_PIN,      INPUT);
 //  pinMode(XLIM2_PIN,      INPUT);
 //  pinMode(YLIM1_PIN,      INPUT);
@@ -108,8 +117,7 @@ volatile bool movementDone = false;
 ISR(TIMER1_COMPA_vect)
 {
   if (stepCount < totalSteps) {
-    STEP_HIGH
-    STEP_LOW
+    stepAxis();
     stepCount++;
     stepPosition += dir;
   }
@@ -137,6 +145,16 @@ ISR(TIMER1_COMPA_vect)
   OCR1A = d;
 }
 
+void stepAxis() {
+  if (axis == 0) {
+    XSTEP_HIGH
+    XSTEP_LOW
+  } else if (axis == 1) {
+    YSTEP_HIGH
+    YSTEP_LOW
+  }
+}
+
 void sleep(int axis) {
   if (axis == 0) {
     digitalWrite(XSLEEP_PIN, LOW);
@@ -155,32 +173,50 @@ void wake(int axis) {
 }
 
 void msSet(int ms) {
-  switch (ms) {
-    case 1:
-      digitalWrite(MS1_PIN, LOW);
-      digitalWrite(MS2_PIN, LOW);
-      digitalWrite(MS3_PIN, LOW);
-      break;
-    case 2:
-      digitalWrite(MS1_PIN, HIGH);
-      digitalWrite(MS2_PIN, LOW);
-      digitalWrite(MS3_PIN, LOW);
-      break;
-    case 4:
-      digitalWrite(MS1_PIN, LOW);
-      digitalWrite(MS2_PIN, HIGH);
-      digitalWrite(MS3_PIN, LOW);
-      break;
-    case 8:
-      digitalWrite(MS1_PIN, HIGH);
-      digitalWrite(MS2_PIN, HIGH);
-      digitalWrite(MS3_PIN, LOW);
-      break;
-    case 16:
-      digitalWrite(MS1_PIN, HIGH);
-      digitalWrite(MS2_PIN, HIGH);
-      digitalWrite(MS3_PIN, HIGH);
-      break;
+  if (axis == 0) {
+    if (ms == 1) {
+      digitalWrite(XMS1_PIN, LOW);
+      digitalWrite(XMS2_PIN, LOW);
+      digitalWrite(XMS3_PIN, LOW);
+    } else if (ms == 2) {
+      digitalWrite(XMS1_PIN, HIGH);
+      digitalWrite(XMS2_PIN, LOW);
+      digitalWrite(XMS3_PIN, LOW);
+    } else if (ms == 4) {
+      digitalWrite(XMS1_PIN, LOW);
+      digitalWrite(XMS2_PIN, HIGH);
+      digitalWrite(XMS3_PIN, LOW);
+    } else if (ms == 8) {
+      digitalWrite(XMS1_PIN, HIGH);
+      digitalWrite(XMS2_PIN, HIGH);
+      digitalWrite(XMS3_PIN, LOW);
+    } else if (ms == 16) {
+      digitalWrite(XMS1_PIN, HIGH);
+      digitalWrite(XMS2_PIN, HIGH);
+      digitalWrite(XMS3_PIN, HIGH);
+    }
+  } else if (axis == 1) {
+    if (ms == 1) {
+      digitalWrite(YMS1_PIN, LOW);
+      digitalWrite(YMS2_PIN, LOW);
+      digitalWrite(YMS3_PIN, LOW);
+    } else if (ms == 2) {
+      digitalWrite(YMS1_PIN, HIGH);
+      digitalWrite(YMS2_PIN, LOW);
+      digitalWrite(YMS3_PIN, LOW);
+    } else if (ms == 4) {
+      digitalWrite(YMS1_PIN, LOW);
+      digitalWrite(YMS2_PIN, HIGH);
+      digitalWrite(YMS3_PIN, LOW);
+    } else if (ms == 8) {
+      digitalWrite(YMS1_PIN, HIGH);
+      digitalWrite(YMS2_PIN, HIGH);
+      digitalWrite(YMS3_PIN, LOW);
+    } else if (ms == 16) {
+      digitalWrite(YMS1_PIN, HIGH);
+      digitalWrite(YMS2_PIN, HIGH);
+      digitalWrite(YMS3_PIN, HIGH);
+    }
   }
 }
 
@@ -206,22 +242,6 @@ void moveToPosition(long p, bool wait = true) {
   moveNSteps(p - stepPosition);
   while ( wait && ! movementDone );
 }
-
-/*
-void serialJog(int jogSpeed, int jogSteps, int dir) {
-  int oldSpeed = maxSpeed;
-  maxSpeed = jogSpeed;
-  wake(axis);
-  if (dir == HIGH) {
-    moveToPosition(stepPosition + jogSteps, axis);
-  } else {
-    moveToPosition(stepPosition - jogSteps, axis);
-  }
-  delay(500);
-  sleep(axis);
-  maxSpeed = oldSpeed;
-}
-*/
 
 void moveMotors() {
   // Set speed and microstepping
@@ -322,15 +342,6 @@ void serialInput() {
 
 void loop() {
   serialInput();
-  delay(2000);
+  delay(10);
   // Serial.write("Movement Complete" or "Error")
-  /*
-  mType = 1;
-  targetPos = 1000;
-  moveMotors();
-  mType = 0;
-  targetPos = 2000;
-  moveMotors();
-  delay(2000);
-  */
 }
