@@ -20,6 +20,7 @@
 
 // Example Serial Input
 // <0,4000,1>
+// Move X-axis to position 4000 for measurement
 
 #define XDIR_PIN          23
 #define XSTEP_PIN         3
@@ -111,15 +112,14 @@ volatile float d;
 volatile unsigned long stepCount = 0;
 volatile unsigned long rampUpStepCount = 0;
 volatile unsigned long totalSteps = 0;
-volatile int stepPosition = 0;
+volatile int xStepPosition = 0;
+volatile int yStepPosition = 0;
 volatile bool movementDone = false;
 
 ISR(TIMER1_COMPA_vect)
 {
   if (stepCount < totalSteps) {
     stepAxis();
-    stepCount++;
-    stepPosition += dir;
   }
   else {
     movementDone = true;
@@ -149,9 +149,13 @@ void stepAxis() {
   if (axis == 0) {
     XSTEP_HIGH
     XSTEP_LOW
+    stepCount++;
+    xStepPosition += dir;
   } else if (axis == 1) {
     YSTEP_HIGH
     YSTEP_LOW
+    stepCount++;
+    yStepPosition += dir;
   }
 }
 
@@ -239,7 +243,11 @@ void moveNSteps(long steps) {
 }
 
 void moveToPosition(long p, bool wait = true) {
-  moveNSteps(p - stepPosition);
+  if (axis == 0) {
+    moveNSteps(p - xStepPosition);
+  } else if (axis == 1) {
+    moveNSteps(p - yStepPosition);
+  }
   while ( wait && ! movementDone );
 }
 
@@ -302,7 +310,7 @@ void recv() {
 }
 
 void showNewData() {
-  Serial.print("This just in ... ");
+  Serial.print("Received Data: ");
   Serial.println(receivedChars);
 }
 
