@@ -102,7 +102,7 @@ void setup() {
 
   Serial.begin(9600);
   delay(10);
-  Serial.println("<Arduino is ready>");
+  //Serial.println("<Arduino is ready>");
 }
 
 volatile int dir = 0;
@@ -276,6 +276,7 @@ void moveMotors() {
     moveToPosition(targetPos);
   }
   sleep(axis);
+  Serial.println("Movement Done");
 }
 
 void recv() {
@@ -325,6 +326,8 @@ void parseData() {
 
   strtokIndx = strtok(NULL, ",");
   mType = atoi(strtokIndx);
+
+  newData = false;
 }
 
 void showParsedData() {
@@ -335,21 +338,28 @@ void showParsedData() {
   Serial.print("Movement Type: ");
   Serial.println(mType);
   Serial.println("\n");
-  newData = false;
+}
+
+void sendReady() {
+  Serial.println(1);
 }
 
 void serialInput() {
   recv();
   if (newData == true) {
-    showNewData();
+    //showNewData();
     parseData();
-    showParsedData();
-    moveMotors();
+    //showParsedData();
+    
+    if ((axis == -1) && (targetPos == -1) && (mType == -1)) {
+      sendReady();
+    } else {
+      moveMotors();
+    }
   }
 }
 
 void loop() {
   serialInput();
   delay(10);
-  // Serial.write("Movement Complete" or "Error")
 }
