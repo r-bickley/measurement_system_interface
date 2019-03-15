@@ -6,5 +6,5 @@ void setup() {
 
 void loop() {
   Serial.println(analogRead(sensorPin));
-  delay(0); // delay between samples
+  delay(100); // delay between samples in milliseconds
 }
