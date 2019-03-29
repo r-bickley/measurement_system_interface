@@ -22,6 +22,8 @@
 // <0,4000,1>
 // Move X-axis to position 4000 for measurement
 
+#include <Nextion.h>
+
 #define XDIR_PIN          23
 #define XSTEP_PIN         3
 #define YDIR_PIN          39
@@ -60,6 +62,39 @@ bool newData = false;
 int axis = 0;
 int targetPos = 0;
 int mType = 0;
+
+NexButton bCal =      NexButton(0,1,  "bCal");
+NexButton bMeasure =  NexButton(0,2,  "bMeasure");
+NexButton bSelect =   NexButton(0,3,  "bSelect");
+NexButton bPause =    NexButton(1,1,  "bPause");
+NexButton bMCancel =  NexButton(1,2,  "bMCancel");
+NexButton bFSelect =  NexButton(2,1,  "bFSelect");
+NexButton bFBack =    NexButton(2,2,  "bFBack");
+NexButton bJogXPos =  NexButton(3,1,  "bJogXPos");
+NexButton bJogXNeg =  NexButton(3,2,  "bJogXNeg");
+NexButton bJogYPos =  NexButton(3,3,  "bJogYPos");
+NexButton bJogYNeg =  NexButton(3,4,  "bJogYNeg");
+NexButton bCConfirm =  NexButton(3,5, "bCConfirm");
+NexButton bCCancel =  NexButton(3,9,  "bCCancel");
+NexButton bJogDist =  NexButton(3,10, "bJogDist");
+
+NexTouch *nex_listen_list[] = {
+  &bCal,
+  &bMeasure,
+  &bSelect,
+  &bPause,
+  &bMCancel,
+  &bFSelect,
+  &bFBack,
+  &bJogXPos,
+  &bJogXNeg,
+  &bJogYPos,
+  &bJogYNeg,
+  &bCConfirm,
+  &bCCancel,
+  &bJogDist,
+  NULL
+};
 
 void setup() {
   pinMode(XDIR_PIN,       OUTPUT);
@@ -103,6 +138,81 @@ void setup() {
   Serial.begin(9600);
   delay(10);
   //Serial.println("<Arduino is ready>");
+
+  bCal.attachPop(bCalPopCallback,           &bCal);
+  bMeasure.attachPop(bMeasurePopCallback,   &bMeasure);
+  bSelect.attachPop(bSelectPopCallback,     &bSelect);
+  bPause.attachPop(bPausePopCallback,       &bPause);
+  bMCancel.attachPop(bMCancelPopCallback,   &bMCancel);
+  bFSelect.attachPop(bFSelectPopCallback,   &bFSelect);
+  bFBack.attachPop(bFBackPopCallback,       &bFBack);
+  bJogXPos.attachPop(bJogXPosPopCallback,   &bJogXPos);
+  bJogXNeg.attachPop(bJogXNegPopCallback,   &bJogXNeg);
+  bJogYPos.attachPop(bJogYPosPopCallback,   &bJogYPos);
+  bJogYNeg.attachPop(bJogYNegPopCallback,   &bJogYNeg);
+  bCConfirm.attachPop(bCConfirmPopCallback, &bCConfirm);
+  bCCancel.attachPop(bCCancelPopCallback,   &bCCancel);
+  bJogDist.attachPop(bJogDistPopCallback,   &bJogDist);
+}
+
+void bCalPopCallback(void *ptr) {
+  // Move to calibration screen
+  // Start calibration
+}
+
+void bMeasurePopCallback(void *ptr) {
+  // Move to measurement screen
+  // Start measurement
+}
+
+void bSelectPopCallback(void *ptr) {
+  // Move to file select screen
+  // Read from USB input
+}
+
+void bPausePopCallback(void *ptr) {
+  // Pause measurement
+}
+
+void bMCancelPopCallback(void *ptr) {
+  // Stop measurement
+}
+
+void bFSelectPopCallback(void *ptr) {
+  // Import info from chosen
+  // Move to home screen
+}
+
+void bFBackPopCallback(void *ptr) {
+  // Move to home screen
+}
+
+void bJogXPosPopCallback(void *ptr) {
+  // Move X plus steps
+}
+
+void bJogXNegPopCallback(void *ptr) {
+  // Move X minus steps
+}
+
+void bJogYPosPopCallback(void *ptr) {
+  // Move Y plus steps
+}
+
+void bJogYNegPopCallback(void *ptr) {
+  // Move Y minus steps
+}
+
+void bCConfirmPopCallback(void *ptr) {
+  // Move to next fid
+}
+
+void bCCancelPopCallback(void *ptr) {
+  // Move to home screen
+}
+
+void bJogDistPopCallback(void *ptr) {
+  // Change jog dist??
 }
 
 volatile int dir = 0;
@@ -115,6 +225,7 @@ volatile unsigned long totalSteps = 0;
 volatile int xStepPosition = 0;
 volatile int yStepPosition = 0;
 volatile bool movementDone = false;
+unsigned long jogDist = 0;
 
 ISR(TIMER1_COMPA_vect)
 {
@@ -282,8 +393,8 @@ void moveMotors() {
 void recv() {
   static bool recvInProgress = false;
   static byte ndx = 0;
-  char startMarker = '<';
-  char endMarker = '>';
+  char startMarker = 'p';
+  char endMarker = 'ÿ';
   char rc;
 
   while (Serial.available() > 0 && newData == false) {
@@ -360,6 +471,7 @@ void serialInput() {
 }
 
 void loop() {
+  //nexLoop(nex_listen_list);
   serialInput();
   delay(10);
 }
