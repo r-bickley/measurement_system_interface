@@ -1,52 +1,61 @@
 int sensorPin = A0;
+
 int sensorValue = 0;
 float voltage = 0.0;
+float dist = 0.0;
 
-const int numReadings = 10;
-int readings[numReadings];
-int readIndex = 0;
-int total = 0;
-int average = 0;
+const int numSamples = 256;
+float dists[numSamples];
 
 void setup() {
+  pinMode(sensorPin, INPUT);
+  analogReference(DEFAULT);
   Serial.begin(9600);
-  // init readings to 0
-  for (int thisReading = 0; thisReading < numReadings; thisReading++) {
-    readings[thisReading] = 0;
-  }
 }
 
 void loop() {
-  readDouble();
-  //readAvg();
+  serialCountdown();
+  for (int i = 0; i < numSamples; i++) {
+    readDouble();
+    logValues(i);
+  }
+  serialPrintArray();
+  while (true);
 }
 
 void readDouble() {
-  sensorValue = analogRead(A0);
-  sensorValue = analogRead(A0);
+  sensorValue = analogRead(sensorPin);
+  sensorValue = analogRead(sensorPin);
   voltage = sensorValue * (5.0 / 1023.0);
-  Serial.println(voltage);
+  dist = voltage * 60 + 5; // Measured distance in mm
+  Serial.println(dist, DEC);
   delay(1);
 }
 
-void readAvg() {
-  // subtract the last reading
-  total = total - readings[readIndex];
-  // read from the sensor
-  readings[readIndex] = analogRead(sensorPin);
-  // add the reading to the total
-  total = total + readings[readIndex];
-  // advance to the next position in the array
-  readIndex = readIndex + 1;
+void logValues(int pos) {
+  numSamples[pos] = dist;
+}
 
-  // if at the end of the array, go to beginning
-  if (readIndex >= numReadings) {
-    readIndex = 0;
+void serialCountdown () {
+  Serial.println("Starting logging in 5 seconds");
+  delay(2000);
+  Serial.println("5...");
+  delay(1000);
+  Serial.println("4...");
+  delay(1000);
+  Serial.println("3...");
+  delay(1000);
+  Serial.println("2...");
+  delay(1000);
+  Serial.println("1...");
+  delay(1000);
+  Serial.println("Starting now");
+  delay(1000);
+}
+
+void serialPrintArray() {
+  for (int i = 0; i < numSamples; i++) {
+    Serial.print(dists[i]);
+    Serial.print(", ");
   }
-
-  // calc avg
-  average = total / numReadings;
-  // send over serial
-  Serial.println(average);
-  delay(1);
 }
