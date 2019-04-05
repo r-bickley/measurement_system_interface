@@ -27,13 +27,19 @@ void readDouble() {
   sensorValue = analogRead(sensorPin);
   sensorValue = analogRead(sensorPin);
   voltage = sensorValue * (5.0 / 1023.0);
-  dist = voltage * 60 + 5; // Measured distance in mm
-  Serial.println(dist, DEC);
+  dist = voltage * 60 + 50; // Measured distance in mm
+  if (dist == 50) {
+    Serial.println("Too close!");
+  } else if (dist == 350) {
+    Serial.println("Too far!");
+  } else {
+    Serial.println(dist, DEC);
+  }
   delay(1);
 }
 
 void logValues(int pos) {
-  numSamples[pos] = dist;
+  dists[pos] = dist;
 }
 
 void serialCountdown () {
