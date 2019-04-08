@@ -40,11 +40,12 @@
 #define YMS1_PIN          49
 #define YMS2_PIN          47
 #define YMS3_PIN          45
-//#define XLIM1_PIN         11
-//#define XLIM2_PIN         12
-//#define YLIM1_PIN         13
-//#define YLIM2_PIN         14
-//#define ESTOP_PIN         15
+#define XLIM1_PIN         11
+#define XLIM2_PIN         12
+#define YLIM1_PIN         13
+#define YLIM2_PIN         14
+#define ESTOP_PIN         15
+#define SENSOR_PIN        A0
 
 #define XSTEP_HIGH        PORTE |=  0b00100000;
 #define XSTEP_LOW         PORTE &= ~0b00100000;
@@ -56,12 +57,8 @@
 #define TIMER1_INTERRUPTS_OFF   TIMSK1 &= ~(1 << OCIE1A);
 
 unsigned int c0;
-const byte numChars = 32;
-char receivedChars[numChars];
-bool newData = false;
-int axis = 0;
-int targetPos = 0;
-int mType = 0;
+bool measuring = false;
+int pos = 0;
 
 NexButton bCal =      NexButton(0,1,  "bCal");
 NexButton bMeasure =  NexButton(0,2,  "bMeasure");
@@ -77,24 +74,6 @@ NexButton bJogYNeg =  NexButton(3,4,  "bJogYNeg");
 NexButton bCConfirm =  NexButton(3,5, "bCConfirm");
 NexButton bCCancel =  NexButton(3,9,  "bCCancel");
 NexButton bJogDist =  NexButton(3,10, "bJogDist");
-
-NexTouch *nex_listen_list[] = {
-  &bCal,
-  &bMeasure,
-  &bSelect,
-  &bPause,
-  &bMCancel,
-  &bFSelect,
-  &bFBack,
-  &bJogXPos,
-  &bJogXNeg,
-  &bJogYPos,
-  &bJogYNeg,
-  &bCConfirm,
-  &bCCancel,
-  &bJogDist,
-  NULL
-};
 
 void setup() {
   pinMode(XDIR_PIN,       OUTPUT);
@@ -113,16 +92,19 @@ void setup() {
   pinMode(YMS1_PIN,       OUTPUT);
   pinMode(YMS2_PIN,       OUTPUT);
   pinMode(YMS3_PIN,       OUTPUT);
-//  pinMode(XLIM1_PIN,      INPUT);
-//  pinMode(XLIM2_PIN,      INPUT);
-//  pinMode(YLIM1_PIN,      INPUT);
-//  pinMode(YLIM2_PIN,      INPUT);
-//  pinMode(ESTOP_PIN,      INPUT);
+  pinMode(XLIM1_PIN,      INPUT);
+  pinMode(XLIM2_PIN,      INPUT);
+  pinMode(YLIM1_PIN,      INPUT);
+  pinMode(YLIM2_PIN,      INPUT);
+  pinMode(ESTOP_PIN,      INPUT);
+  pinMode(SENSOR_PIN,     INPUT);
   
   digitalWrite(XSLEEP_PIN, LOW);
   digitalWrite(YSLEEP_PIN, LOW);
   digitalWrite(XRESET_PIN, HIGH);
   digitalWrite(YRESET_PIN, HIGH);
+
+  analogReference(DEFAULT);
 
   noInterrupts();
   TCCR1A = 0;
@@ -154,6 +136,30 @@ void setup() {
   bCCancel.attachPop(bCCancelPopCallback,   &bCCancel);
   bJogDist.attachPop(bJogDistPopCallback,   &bJogDist);
 }
+
+////////////////////////////////////////////////////////////////////////
+//                                                                    //
+//                            SCREEN FUNCTIONS                        //
+//                                                                    //
+////////////////////////////////////////////////////////////////////////
+
+NexTouch *nex_listen_list[] = {
+  &bCal,
+  &bMeasure,
+  &bSelect,
+  &bPause,
+  &bMCancel,
+  &bFSelect,
+  &bFBack,
+  &bJogXPos,
+  &bJogXNeg,
+  &bJogYPos,
+  &bJogYNeg,
+  &bCConfirm,
+  &bCCancel,
+  &bJogDist,
+  NULL
+};
 
 void bCalPopCallback(void *ptr) {
   // Move to calibration screen
@@ -215,6 +221,16 @@ void bJogDistPopCallback(void *ptr) {
   // Change jog dist??
 }
 
+////////////////////////////////////////////////////////////////////////
+//                                                                    //
+//                             MOTOR FUNCTIONS                        //
+//                                                                    //
+////////////////////////////////////////////////////////////////////////
+
+int axis = 0;
+int targetPos = 0;
+int mType = 0;
+
 volatile int dir = 0;
 volatile unsigned int maxSpeed = 10;
 volatile unsigned long n = 0;
@@ -224,6 +240,8 @@ volatile unsigned long rampUpStepCount = 0;
 volatile unsigned long totalSteps = 0;
 volatile int xStepPosition = 0;
 volatile int yStepPosition = 0;
+int xMaxStepPosition = 0;
+int yMaxStepPosition = 0;
 volatile bool movementDone = false;
 unsigned long jogDist = 0;
 
@@ -231,6 +249,13 @@ ISR(TIMER1_COMPA_vect)
 {
   if (stepCount < totalSteps) {
     stepAxis();
+    if (measuring) {
+      readDouble();
+      logValues(pos);
+    }
+  } else if (XLIM1_PIN == LOW || XLIM2_PIN == LOW || YLIM1_PIN == LOW || YLIM2_PIN == LOW) {
+    movementDone = true;
+    TIMER1_INTERRUPTS_OFF
   }
   else {
     movementDone = true;
@@ -239,7 +264,7 @@ ISR(TIMER1_COMPA_vect)
 
   if (rampUpStepCount == 0) { // ramp up phase
     n++;
-    d = d - (2 * d) / (4 * n + 1);
+    d = d-(2*d) / (4*n+1);
     if (d <= maxSpeed) { // reached max speed
       d = maxSpeed;
       rampUpStepCount = stepCount;
@@ -250,7 +275,7 @@ ISR(TIMER1_COMPA_vect)
   }
   else if (stepCount >= totalSteps - rampUpStepCount) { // ramp down phase
     n--;
-    d = (d * (4 * n + 1)) / (4 * n + 1 - 2);
+    d = (d*(4*n+1)) / (4*n+1-2);
   }
 
   OCR1A = d;
@@ -390,6 +415,95 @@ void moveMotors() {
   Serial.println("Movement Done");
 }
 
+////////////////////////////////////////////////////////////////////////
+//                                                                    //
+//                            LASER FUNCTIONS                         //
+//                                                                    //
+////////////////////////////////////////////////////////////////////////
+
+int sensorValue = 0;
+float voltage = 0.0;
+float dist = 0.0;
+
+const int numSamples = 1000;
+float dists[numSamples];
+
+void readDouble() {
+  sensorValue = analogRead(SENSOR_PIN);
+  sensorValue = analogRead(SENSOR_PIN);
+  voltage = sensorValue * (5.0 / 1023.0); // change for 16-bit ADC
+  dist = voltage * 60 + 50; // measured distance in mm
+  Serial.println(dist, DEC);
+  //delay(1);
+}
+
+void logValues(int pos) {
+  dists[pos] = dist;
+  pos++;
+}
+
+////////////////////////////////////////////////////////////////////////
+//                                                                    //
+//                            DRIVER FUNCTIONS                        //
+//                                                                    //
+////////////////////////////////////////////////////////////////////////
+
+void calibrate() {
+  mType = 2;
+
+  axis = 1;
+  // XLIM1
+  targetPos = -100000;
+  moveMotors();
+  xStepPosition = 0;
+  // XLIM2
+  targetPos = 100000;
+  moveMotors();
+  xMaxStepPosition = xStepPosition;
+
+  axis = 2;
+  // YLIM1
+  targetPos = -100000;
+  moveMotors();
+  yStepPosition = 0;
+  // YLIM2
+  targetPos = 100000;
+  moveMotors();
+  yMaxStepPosition = yStepPosition;
+}
+
+void measureOne(float x, float y, int featureType) {
+  // Function to measure one feature
+
+  // move next to feature
+
+  // start measurement and logging
+  measuring = true;
+  pos = 0;
+
+  // move across feature
+  axis = 1;
+  targetPos = yStepPosition + numSamples;
+  mType = 0;
+  moveMotors();
+
+  // stop measurement and logging
+  measuring = false;
+  pos = 0;
+
+  // output data to appropriate location
+}
+
+////////////////////////////////////////////////////////////////////////
+//                                                                    //
+//                            SERIAL FUNCTIONS                        //
+//                                                                    //
+////////////////////////////////////////////////////////////////////////
+
+const byte numChars = 32;
+char receivedChars[numChars];
+bool newData = false;
+
 void recv() {
   static bool recvInProgress = false;
   static byte ndx = 0;
@@ -470,8 +584,17 @@ void serialInput() {
   }
 }
 
+////////////////////////////////////////////////////////////////////////
+//                                                                    //
+//                               MAIN LOOP                            //
+//                                                                    //
+////////////////////////////////////////////////////////////////////////
+
 void loop() {
   //nexLoop(nex_listen_list);
-  serialInput();
+  //serialInput();
   delay(10);
+
+  measureOne(0,0,0);
+  while (true);
 }
