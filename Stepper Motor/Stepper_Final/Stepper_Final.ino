@@ -23,6 +23,7 @@
 // Move X-axis to position 4000 for measurement
 
 #include <Nextion.h>
+#include <Adafruit_ADS1015.h>
 
 #define XDIR_PIN          23
 #define XSTEP_PIN         3
@@ -59,6 +60,8 @@
 unsigned int c0;
 bool measuring = false;
 int pos = 0;
+
+Adafruit_ADS1115 adc;
 
 NexButton bCal =      NexButton(0,1,  "bCal");
 NexButton bMeasure =  NexButton(0,2,  "bMeasure");
@@ -105,6 +108,7 @@ void setup() {
   digitalWrite(YRESET_PIN, HIGH);
 
   analogReference(DEFAULT);
+  adc.begin();
 
   noInterrupts();
   TCCR1A = 0;
@@ -250,7 +254,8 @@ ISR(TIMER1_COMPA_vect)
   if (stepCount < totalSteps) {
     stepAxis();
     if (measuring) {
-      readDouble();
+      //readDouble();
+      readADC();
       logValues(pos);
     }
   } else if (XLIM1_PIN == LOW || XLIM2_PIN == LOW || YLIM1_PIN == LOW || YLIM2_PIN == LOW) {
@@ -421,20 +426,27 @@ void moveMotors() {
 //                                                                    //
 ////////////////////////////////////////////////////////////////////////
 
-int sensorValue = 0;
+int16_t sensorValue = 0;
 float voltage = 0.0;
 float dist = 0.0;
+int16_t adcValue;
 
 const int numSamples = 1000;
 float dists[numSamples];
 
+void readADC() {
+  adcValue = adc.readADC_SingleEnded(0);
+  voltage = adcValue * (5.0 / 65535.0); // 16-bit external ADC
+  dist = voltage * 60 + 50; // measured distance in mm
+  Serial.println(dist, DEC);
+}
+
 void readDouble() {
   sensorValue = analogRead(SENSOR_PIN);
   sensorValue = analogRead(SENSOR_PIN);
-  voltage = sensorValue * (5.0 / 1023.0); // change for 16-bit ADC
+  voltage = sensorValue * (5.0 / 1023.0); // 10-bit internal ADC
   dist = voltage * 60 + 50; // measured distance in mm
   Serial.println(dist, DEC);
-  //delay(1);
 }
 
 void logValues(int pos) {
@@ -448,7 +460,7 @@ void logValues(int pos) {
 //                                                                    //
 ////////////////////////////////////////////////////////////////////////
 
-void calibrate() {
+void globalCal() {
   mType = 2;
 
   axis = 1;
