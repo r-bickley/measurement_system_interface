@@ -1,26 +1,42 @@
+#include <Adafruit_ADS1015.h>
+
 int sensorPin = A0;
 
-int sensorValue = 0;
+int16_t sensorValue = 0;
 float voltage = 0.0;
 float dist = 0.0;
+int16_t adcValue = 0;
 
 const int numSamples = 256;
 float dists[numSamples];
 
+Adafruit_ADS1115 adc;
+
 void setup() {
   pinMode(sensorPin, INPUT);
   analogReference(DEFAULT);
+  adc.begin();
   Serial.begin(9600);
 }
 
 void loop() {
   serialCountdown();
   for (int i = 0; i < numSamples; i++) {
-    readDouble();
+    readADC();
+    //readDouble();
     logValues(i);
   }
-  serialPrintArray();
+  //serialPrintArray();
   while (true);
+}
+
+void readADC() {
+  adcValue = adc.readADC_SingleEnded(0);
+  adcValue = adc.readADC_SingleEnded(0);
+  voltage = adcValue * (5.0 / 65535.0);
+  dist = voltage * 60 + 50; // Measured distance in mm
+  Serial.println(dist, DEC);
+  delay(1);
 }
 
 void readDouble() {
