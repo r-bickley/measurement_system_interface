@@ -1,0 +1,8 @@
+﻿fid1,fid2,fid3,x_coords,y_coords,ind,p1,p2,p3,p4,p5
+fid1x,fid2x,fid3x,xp1,yp1,1,profile data,profile data,profile data,profile data,profile data
+fid1y,fid2y,fid3y,xp2,yp2,2,profile data,profile data,profile data,profile data,profile data
+fid1z,fid2z,fid3z,xp3,yp3,3,profile data,profile data,profile data,profile data,profile data
+,,,xp4,yp4,4,profile data,profile data,profile data,profile data,profile data
+,,,xp5,yp5,5,profile data,profile data,profile data,profile data,profile data
+,,,,,6,profile data,profile data,profile data,profile data,profile data
+,,,,,…,…,…,…,…,…
